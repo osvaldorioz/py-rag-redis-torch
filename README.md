@@ -18,6 +18,29 @@ El modelo **all-mpnet-base-v2** es un modelo de lenguaje desarrollado por **Micr
 
 En la versión anterior de bindings.cpp no se utilizó torch para analizar los embeddings de Redis,  en esta nueva versión de bindings.cpp se utiliza torch para cargar el modelo all-mpnet-base-v2.  Este cambio muestra un mejor desempeño para análisis de embeddings así como el performance también es superior al pasar el cálculo a C++ y no en Python.
 
+Cambios principales en bindings.cpp
+
+    Cambio del modelo de embeddings:
+        Antes: Usaba all-MiniLM-L6-v2 en el constructor (RAG::RAG).
+        Ahora: Se actualizó a all-mpnet-base-v2 para mejorar la precisión semántica en la generación de embeddings de consultas:
+        cpp
+
+    model = sentence_transformers.attr("SentenceTransformer")("all-mpnet-base-v2");
+
+Depuración añadida:
+
+    Se agregaron mensajes de depuración en retrieve_relevant_docs para mostrar las similitudes coseno y el documento seleccionado:
+    cpp
+
+    std::cout << "Similitud con doc " << document_keys[i] << ": " << similarity << std::endl;
+    std::cout << "Documento seleccionado: " << document_keys[similarities[0].second] << std::endl;
+    Impacto: Facilitó diagnosticar por qué el modelo anterior seleccionaba documentos incorrectos y confirmar que el nuevo modelo funciona como esperado.
+
+Integración con Redis mantenida:
+
+    Antes: Los embeddings de las consultas también se buscaban en Redis, lo que limitaba las consultas a las predefinidas.
+    Ahora: Los embeddings de las consultas se generan dinámicamente en C++ con get_query_embedding, mientras que los documentos y sus embeddings se recuperan de Redis:
+   
 En resumen ahora el sistema RAG:
 
   - Usa Redis para almacenar documentos y embeddings precalculados.
